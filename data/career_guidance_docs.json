@@ -1,0 +1,62 @@
+[
+  {
+    "title": "About This Platform (AI Career Agent)",
+    "topic": "Platform Guide",
+    "content": "The AI Career Agent is an intelligent full-stack career platform designed to help technical professionals navigate job search, resume improvement, and career transitions. The platform includes: 1. Personalized Job Recommendations: Automatically matches candidate skills and experience against live jobs in PostgreSQL with pgvector embeddings and hybrid search. 2. Interactive AI Career Agent Chat: A multi-turn conversational agent powered by LangGraph and Google Gemini with real-time tool calling. 3. Smart Resume Parsing: Extracts structured profile data from PDF resumes using LLM extraction into skills, experience, and education. 4. Skill Gap Analysis: Compares candidate profiles directly with target job descriptions, identifying matching skills, missing required skills, and actionable improvement steps. 5. Live Web & Knowledge Retrieval: Integrates grounded RAG and live web search for up-to-date industry trends, salary benchmarks, and interview frameworks. 6. Saved Jobs & Tracking: Allows candidates to bookmark opportunities and track target roles."
+  },
+  {
+    "title": "How to Use Job Search and Recommendations on the Platform",
+    "topic": "Platform Guide",
+    "content": "To get the best job recommendations on the AI Career Agent platform: Step 1: Upload your updated resume on the Resume page (/dashboard/resume). The system will automatically parse your technical and soft skills, past job titles, and experience years. Step 2: Navigate to Recommended Jobs (/dashboard/recommendations) to see roles ranked by hybrid similarity score (semantic cosine similarity + BM25 keyword matching). Step 3: Use the Skill Gap page (/dashboard/skill-gap) to select any target role and review exact missing technologies and study recommendations. Step 4: Chat with the AI Career Agent (/dashboard/chat) using natural queries like 'Find remote Python roles paying over $120k' or 'Compare the Senior Backend Engineer role with the Full Stack Developer role'. You can also ask the agent to bookmark jobs directly into your account."
+  },
+  {
+    "title": "Technical Resume Optimization for Software Engineers",
+    "topic": "Resume Writing",
+    "content": "A high-impact technical resume should adhere to the Google XYZ formula: 'Accomplished [X], as measured by [Y], by doing [Z]'. Instead of listing generic responsibilities, quantify your engineering impact. For example: 'Reduced API response latency by 45% (from 800ms to 440ms) by implementing Redis caching and optimizing PostgreSQL indexes with SQLAlchemy'. Organize your resume logically: Contact info at top, followed by a concise Technical Skills section grouped into Languages, Frameworks, Databases, and Tools. Prioritize work experience in reverse chronological order. Ensure every bullet point begins with a strong active verb like Architected, Implemented, Streamlined, or Scaled. Keep your resume to exactly one page for engineers with less than 5 years of experience. Use standard fonts and clean single-column layouts to ensure high parsing fidelity with Applicant Tracking Systems (ATS)."
+  },
+  {
+    "title": "Transitioning to AI and LLM Engineering",
+    "topic": "Career Transition",
+    "content": "Transitioning from traditional software engineering into AI and LLM engineering requires bridging the gap between classical backend systems and modern probabilistic foundation models. Start by mastering Python, PyTorch, and deep learning fundamentals including attention mechanisms and transformer architectures. Next, focus on modern LLM orchestration frameworks like LangChain and LangGraph to understand agentic tool-calling workflows and state management. Learn vector database principles, including approximate nearest neighbors (ANN), cosine similarity, and hybrid search with PostgreSQL pgvector. Practical portfolio projects are essential: build an end-to-end RAG system that evaluates hallucination rates using Ragas or DeepEval, or implement an autonomous agent with deterministic stopping conditions. Understanding token economics, rate limiting, and prompt caching will separate you from candidates who only understand surface-level prompt wrappers."
+  },
+  {
+    "title": "System Design Interview Preparation for Backend Engineers",
+    "topic": "Interview Preparation",
+    "content": "System design interviews evaluate your ability to architect scalable, reliable, and maintainable distributed systems. Use the standard 4-step framework: Step 1 (Understand the Problem & Scope): Clarify functional and non-functional requirements (throughput, latency, availability, consistency), and calculate back-of-the-envelope traffic and storage requirements. Step 2 (High-Level Design): Sketch the core components including API Gateways, Load Balancers, Application Microservices, and Databases. Step 3 (Deep Dive into Core Bottlenecks): Discuss SQL vs NoSQL trade-offs, caching strategies with Redis, database sharding and replication, and message queues (Kafka, RabbitMQ) for asynchronous decoupling. Step 4 (Fault Tolerance & Scalability): Address single points of failure, rate limiting to protect services from cascading failures, and health check monitoring. Always justify architectural decisions based on CAP theorem trade-offs."
+  },
+  {
+    "title": "Mastering the STAR Method for Technical Behavioral Interviews",
+    "topic": "Behavioral Interviews",
+    "content": "Senior engineering interviews place significant weight on behavioral questions to assess leadership, communication, and conflict resolution. Structure every answer using the STAR method: Situation, Task, Action, Result. Situation: Set the scene briefly in 1-2 sentences (e.g. 'At my previous startup, our primary database was experiencing severe connection exhaustion during peak sales'). Task: Describe your specific responsibility or objective. Action: Detail the concrete technical and collaborative actions you personally took (e.g. 'I analyzed the slow query log, introduced a PgBouncer connection pool, and led a post-mortem with the backend team'). Result: Conclude with quantified outcomes and lessons learned (e.g. 'This eliminated connection timeouts, maintained 99.99% availability, and established an automated alerting threshold for team on-call'). Avoid saying 'we did'; emphasize 'I analyzed, I decided, I implemented'."
+  },
+  {
+    "title": "Tech Compensation and Equity Negotiation Guide",
+    "topic": "Offer Negotiation",
+    "content": "Negotiating compensation in tech requires preparation, data, and emotional discipline. Never disclose your current salary or state a specific number first. When asked about expectations, redirect: 'I am focused on finding the right role, and I am confident we can agree on a competitive package that reflects market rates and my impact'. Base all negotiation on market data from verified platforms like Levels.fyi rather than personal needs. Understand the components of a tech offer: Base Salary, Annual Performance Bonus, Sign-on Bonus, and Equity (RSUs or Stock Options). When negotiating, ask questions rather than making demands: 'Is there flexibility on the equity grant or base salary to bridge the gap with other opportunities I am currently evaluating?'. If base salary is fixed due to company pay bands, negotiate sign-on bonuses, relocation allowances, remote work stipends, or review timelines."
+  },
+  {
+    "title": "Production Microservices and Database Optimization",
+    "topic": "Backend Best Practices",
+    "content": "Designing high-performance backend microservices requires proactive database hygiene. In PostgreSQL, avoid the N+1 query problem by using joined loading or subquery eager loading in ORMs like SQLAlchemy. Always index foreign keys and columns frequently used in WHERE, JOIN, and ORDER BY clauses. Use EXPLAIN ANALYZE to inspect query execution plans and identify sequential scans on large tables. For high write throughput, batch insert operations rather than executing individual commits inside loops. Use connection pooling (like SQLAlchemy's QueuePool or external PgBouncer) with pre-ping validation to recycle stale connections gracefully. Implement idempotency keys using UUIDs in payment and transaction APIs to prevent duplicate processing on client retries."
+  },
+  {
+    "title": "Modern Frontend Architecture with React and Vite",
+    "topic": "Frontend Engineering",
+    "content": "Building scalable React applications demands clean component hierarchy and state segregation. Separate presentation components from business logic container hooks. Minimize unnecessary re-renders by utilizing React.memo, useMemo, and useCallback strategically where computation is expensive. Choose lightweight build tools like Vite over legacy Webpack for instant hot module replacement (HMR) and optimized ES module bundling. For data fetching, use libraries like TanStack Query (React Query) to handle caching, background refetching, and optimistic updates automatically instead of raw useEffect patterns. Ensure accessibility (a11y) by using semantic HTML5 tags and maintaining WCAG color contrast ratios."
+  },
+  {
+    "title": "Cloud DevOps and Infrastructure as Code Principles",
+    "topic": "DevOps & Cloud",
+    "content": "Modern cloud infrastructure must be reproducible, versioned, and immutable. Use Infrastructure as Code (IaC) tools like Terraform or AWS CloudFormation to declare infrastructure state. Store Terraform state files in remote backends (like AWS S3) with state locking via DynamoDB to prevent concurrent pipeline conflicts. Structure Dockerfiles with multi-stage builds to minimize image sizes and eliminate build-time tools from production containers. In Kubernetes, define explicit resource requests and limits to enable the scheduler to balance workloads effectively and prevent noisy neighbor memory crashes (OOMKilled). Implement automated CI/CD pipelines with branch protection rules, linting, automated testing, and zero-downtime rolling deployments."
+  },
+  {
+    "title": "AI Engineering Interview Preparation & Evaluation",
+    "topic": "Interview Preparation",
+    "content": "AI and ML Engineer interviews typically cover four areas: 1. Applied LLM Architecture: RAG architectures (chunking strategies, hybrid search, reranking with Cross-Encoders, context window management), vector indexing algorithms (HNSW vs IVFFlat), and hallucination evaluation frameworks (faithfulness, answer relevance). 2. Agentic Systems: Building autonomous multi-step agents using LangGraph or AutoGen, function calling, tool use, loop prevention, and memory states. 3. Classical Machine Learning & Deep Learning: Precision, Recall, F1, AUC-ROC, gradient descent, overfitting mitigations, transformer attention formulas. 4. Coding & LeetCode: Data structures, graph algorithms, and efficient Python implementations."
+  },
+  {
+    "title": "Remote Job Hunting Strategies and Portfolio Presentation",
+    "topic": "Job Search",
+    "content": "Standing out for remote engineering roles requires high proof-of-work visibility: 1. Open Source & Portfolio: Maintain 2-3 production-grade, deployed full-stack or AI projects on GitHub with clean READMEs, architectural diagrams, unit tests, and live demo links. 2. Asynchronous Communication: Demonstrate written clarity in pull requests, cover letters, and design documents. Remote teams prioritize autonomous engineers who communicate effectively across time zones. 3. Targeted Networking: Connect with hiring managers and engineering leads directly on LinkedIn and Twitter/X with concise, tailored messages citing specific problems their team is solving."
+  }
+]

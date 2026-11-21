@@ -1,0 +1,102 @@
+{
+  "description": "Documented benchmark evaluation dataset for AI Career Agent recommendation and agent pipelines.",
+  "version": "1.0",
+  "recommendation_personas": [
+    {
+      "persona_id": "persona-python-backend",
+      "description": "Mid-level Python Backend Engineer seeking microservices & database roles",
+      "profile": {
+        "full_name": "Marcus Vance",
+        "headline": "Backend Engineer (FastAPI & PostgreSQL)",
+        "skills": ["Python", "FastAPI", "PostgreSQL", "SQLAlchemy", "Redis", "Docker"],
+        "preferred_roles": ["Backend Python Developer", "Junior Backend Developer"],
+        "preferred_locations": ["New York, NY", "Remote"],
+        "min_years": 3
+      },
+      "ground_truth_job_ids": ["job-003", "job-004", "job-014"]
+    },
+    {
+      "persona_id": "persona-ai-engineer",
+      "description": "Junior AI & LLM Engineer looking for generative AI / PyTorch positions",
+      "profile": {
+        "full_name": "Elena Rostova",
+        "headline": "Junior AI Engineer & Foundation Model Researcher",
+        "skills": ["Python", "PyTorch", "FastAPI", "Transformers", "Git", "LangGraph"],
+        "preferred_roles": ["Junior AI Engineer", "AI Research Intern", "LLM Solutions Architect"],
+        "preferred_locations": ["San Francisco, CA", "Remote"],
+        "min_years": 1
+      },
+      "ground_truth_job_ids": ["job-001", "job-010", "job-005"]
+    },
+    {
+      "persona_id": "persona-frontend-dev",
+      "description": "Frontend specialist proficient in modern React, TypeScript, and UI engineering",
+      "profile": {
+        "full_name": "Chloe Lin",
+        "headline": "Frontend React Developer",
+        "skills": ["React", "TypeScript", "HTML5", "CSS3", "Tailwind CSS", "Recharts"],
+        "preferred_roles": ["Frontend Developer (React / TypeScript)", "Full Stack Engineer (React & Python)"],
+        "preferred_locations": ["Austin, TX", "Remote"],
+        "min_years": 2
+      },
+      "ground_truth_job_ids": ["job-006", "job-004"]
+    },
+    {
+      "persona_id": "persona-cloud-devops",
+      "description": "DevOps & Infrastructure Engineer specializing in Kubernetes, AWS and Terraform",
+      "profile": {
+        "full_name": "Devon Patel",
+        "headline": "Cloud Infrastructure & DevOps Engineer",
+        "skills": ["Docker", "Kubernetes", "Terraform", "AWS", "CI/CD", "Linux"],
+        "preferred_roles": ["Cloud DevOps & Infrastructure Engineer"],
+        "preferred_locations": ["Remote"],
+        "min_years": 4
+      },
+      "ground_truth_job_ids": ["job-008", "job-011"]
+    }
+  ],
+  "tool_selection_test_cases": [
+    {
+      "prompt": "Can you find me remote jobs for Python developers?",
+      "expected_tool": "search_jobs"
+    },
+    {
+      "prompt": "What are the full details and required skills for job job-001?",
+      "expected_tool": "get_job_details"
+    },
+    {
+      "prompt": "Can you compare job-001 and job-002 side by side?",
+      "expected_tool": "compare_jobs"
+    },
+    {
+      "prompt": "What skills am I missing for the Junior AI Engineer role?",
+      "expected_tool": "analyse_skill_gap"
+    },
+    {
+      "prompt": "What jobs do you recommend based on my resume?",
+      "expected_tool": "recommend_jobs"
+    },
+    {
+      "prompt": "Please bookmark job-003 to my saved opportunities.",
+      "expected_tool": "save_job"
+    }
+  ],
+  "rag_qa_test_cases": [
+    {
+      "question": "What is the STAR method for behavioral interviews?",
+      "expected_keywords": ["Situation", "Task", "Action", "Result"]
+    },
+    {
+      "question": "How should I structure bullet points on my technical resume?",
+      "expected_keywords": ["Google", "XYZ", "quantify", "action verb"]
+    },
+    {
+      "question": "What are the core steps to prepare for a system design interview?",
+      "expected_keywords": ["Requirements", "High-Level", "Bottlenecks", "Scalability"]
+    },
+    {
+      "question": "How can I avoid database connection exhaustion in microservices?",
+      "expected_keywords": ["connection pooling", "PgBouncer", "indexing", "SQLAlchemy"]
+    }
+  ]
+}

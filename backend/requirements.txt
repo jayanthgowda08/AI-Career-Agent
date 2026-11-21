@@ -1,0 +1,63 @@
+# ================================
+# Core Framework
+# ================================
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+pydantic==2.9.2
+pydantic-settings==2.5.2
+email-validator>=2.0.0
+python-multipart==0.0.12
+
+# ================================
+# Database
+# ================================
+sqlalchemy==2.0.35
+psycopg[binary]==3.2.3
+pgvector==0.3.2
+alembic==1.13.3
+
+# ================================
+# Authentication
+# ================================
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# ================================
+# AI / LLM
+# ================================
+google-generativeai==0.8.3
+langgraph==0.2.35
+langchain-core==0.3.15
+
+# ================================
+# Embeddings & ML
+# ================================
+sentence-transformers==3.3.1
+pandas==2.2.3
+numpy==2.2.0
+# scikit-learn — install separately: pip install scikit-learn --only-binary :all:
+# (needed only in Phase 7 for recommendation ranking)
+
+# ================================
+# Resume Parsing
+# ================================
+pdfplumber==0.11.4
+pymupdf==1.25.1
+
+# ================================
+# HTTP Client & Utilities
+# ================================
+httpx==0.27.2
+python-dotenv==1.0.1
+tenacity==9.0.0
+
+# ================================
+# Logging
+# ================================
+loguru==0.7.2
+
+# ================================
+# Testing
+# ================================
+pytest==8.3.3
+pytest-asyncio==0.24.0

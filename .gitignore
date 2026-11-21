@@ -1,0 +1,78 @@
+# ================================
+# Python
+# ================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.Python
+env/
+venv/
+.venv/
+ENV/
+*.pyo
+
+# ================================
+# Environment & Secrets
+# ================================
+.env
+.env.local
+.env.production
+*.pem
+*.key
+
+# ================================
+# Node / Frontend
+# ================================
+node_modules/
+dist/
+.next/
+out/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+# ================================
+# VS Code
+# ================================
+.vscode/settings.json
+.vscode/launch.json
+
+# ================================
+# Docker
+# ================================
+postgres_data/
+
+# ================================
+# Uploads & Generated Files
+# ================================
+uploads/
+*.pdf
+
+# ================================
+# Testing & Coverage
+# ================================
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# ================================
+# OS
+# ================================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ================================
+# Logs
+# ================================
+*.log
+logs/
