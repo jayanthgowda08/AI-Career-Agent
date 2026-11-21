@@ -25,6 +25,7 @@ passlib[bcrypt]==1.7.4
 # ================================
 # AI / LLM
 # ================================
+google-genai>=0.3.0
 google-generativeai==0.8.3
 langgraph==0.2.35
 langchain-core==0.3.15
@@ -33,10 +34,9 @@ langchain-core==0.3.15
 # Embeddings & ML
 # ================================
 sentence-transformers==3.3.1
+scikit-learn>=1.5.0
 pandas==2.2.3
 numpy==2.2.0
-# scikit-learn — install separately: pip install scikit-learn --only-binary :all:
-# (needed only in Phase 7 for recommendation ranking)
 
 # ================================
 # Resume Parsing
