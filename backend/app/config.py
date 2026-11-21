@@ -7,6 +7,7 @@ missing from the .env file, the app will refuse to start and tell you exactly
 which variable is missing — this prevents silent misconfigurations.
 """
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 
@@ -39,11 +40,25 @@ class Settings(BaseSettings):
 
     # --- Gemini AI ---
     gemini_api_key: str
-    gemini_model: str = "gemini-1.5-flash"
+    gemini_model: str = "gemini-3.5-flash"
 
     # --- File Uploads ---
     upload_dir: str = "./uploads"
     max_upload_size_mb: int = 10
+
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def normalize_database_url(cls, v: str) -> str:
+        """
+        Auto-corrects cloud database URLs (e.g. Render, Heroku) that supply
+        'postgres://' or 'postgresql://' so SQLAlchemy loads the psycopg driver.
+        """
+        if isinstance(v, str):
+            if v.startswith("postgres://"):
+                return v.replace("postgres://", "postgresql+psycopg://", 1)
+            elif v.startswith("postgresql://") and not v.startswith("postgresql+"):
+                return v.replace("postgresql://", "postgresql+psycopg://", 1)
+        return v
 
     @property
     def allowed_origins_list(self) -> list[str]:
