@@ -32,8 +32,10 @@ langgraph==0.2.35
 langchain-core==0.3.15
 
 # ================================
-# Embeddings & ML
+# Embeddings & ML (CPU-only PyTorch to stay well within 512MB RAM)
 # ================================
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch>=2.0.0
 sentence-transformers>=3.0.0
 scikit-learn>=1.4.0
 pandas>=2.0.0
