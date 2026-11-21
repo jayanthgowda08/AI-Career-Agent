@@ -18,9 +18,6 @@ from loguru import logger
 from app.config import settings
 from app.database import engine, Base, check_database_connection, init_db
 
-# Initialize all database tables immediately
-init_db()
-
 # Import API routers
 from app.api import auth, profiles, resumes, jobs, search, recommendations, agent, rag, evaluations
 
@@ -41,14 +38,11 @@ async def lifespan(app: FastAPI):
     os.makedirs(settings.upload_dir, exist_ok=True)
     logger.info(f"📁 Upload directory ready: {settings.upload_dir}")
 
-    # Verify database is reachable
-    db_ok = check_database_connection()
-    if db_ok:
-        # Create all tables registered with SQLAlchemy Base
-        Base.metadata.create_all(bind=engine)
-        logger.info("🗄️ Database tables verified/created.")
-    else:
-        logger.warning("⚠️ Database not reachable at startup. Some features will not work.")
+    # Initialize database extensions & tables safely inside lifespan
+    try:
+        init_db()
+    except Exception as db_err:
+        logger.error(f"⚠️ Database initialization error: {db_err}")
 
     logger.info("✅ Application startup complete.")
     logger.info(f"📖 API docs available at: http://localhost:8000/docs")
@@ -133,3 +127,9 @@ app.include_router(recommendations.router, prefix="/api/recommendations", tags=[
 app.include_router(agent.router,           prefix="/api/agent",           tags=["AI Career Agent"])
 app.include_router(rag.router,             prefix="/api/rag",             tags=["RAG Career Guidance"])
 app.include_router(evaluations.router,     prefix="/api/evaluations",     tags=["System Evaluations"])
+
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 10000))
+    uvicorn.run("app.main:app", host="0.0.0.0", port=port)
