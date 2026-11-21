@@ -54,6 +54,18 @@ class Base(DeclarativeBase):
 def init_db():
     """Ensures all registered models exist as PostgreSQL tables."""
     import app.models  # noqa: F401
+
+    # Ensure required PostgreSQL extensions exist before creating tables with Vector types
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
+            conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm;"))
+            conn.execute(text("CREATE EXTENSION IF NOT EXISTS unaccent;"))
+            conn.commit()
+            logger.info("🔌 PostgreSQL extensions (vector, pg_trgm, unaccent) verified & enabled.")
+    except Exception as ext_err:
+        logger.warning(f"Could not automatically enable extensions (may need manual DB privileges): {ext_err}")
+
     Base.metadata.create_all(bind=engine)
     logger.info("🗄️ Database tables verified & created.")
 
