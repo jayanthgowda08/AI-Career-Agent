@@ -30,7 +30,7 @@ export default function AuthPage() {
     } catch (err) {
       console.error("Auth error details:", err);
       if (!err.response) {
-        setError('Cannot connect to backend server. Make sure FastAPI is running on http://localhost:8000.');
+        setError('Cannot connect to backend server. Note: On free hosting (Render), the backend spins down when idle and can take 30–50 seconds to wake up on the first request. Please wait a moment and try again.');
       } else {
         const detail = err.response.data?.detail;
         if (typeof detail === 'string') {

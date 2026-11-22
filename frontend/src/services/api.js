@@ -1,7 +1,13 @@
 import axios from 'axios';
 
 // Base API URL: uses environment variable in production (Netlify), or '/api' proxy in local dev
-const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
+let rawBase = import.meta.env.VITE_API_BASE_URL || '/api';
+rawBase = rawBase.trim().replace(/\/+$/, '');
+// Ensure it ends with /api if a full HTTP URL was provided without /api
+if (rawBase.startsWith('http') && !rawBase.endsWith('/api')) {
+  rawBase = `${rawBase}/api`;
+}
+const API_BASE = rawBase;
 
 const API = axios.create({
   baseURL: API_BASE,
