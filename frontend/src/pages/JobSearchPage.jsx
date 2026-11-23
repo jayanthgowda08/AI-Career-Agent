@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import JobCard from '../components/JobCard';
 import API from '../services/api';
-import { Search, MapPin, Briefcase, Sparkles, Filter } from 'lucide-react';
+import { Search, MapPin, Briefcase, Sparkles, Filter, AlertCircle } from 'lucide-react';
 
 export default function JobSearchPage() {
   const [query, setQuery] = useState('');
@@ -11,10 +11,12 @@ export default function JobSearchPage() {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [total, setTotal] = useState(0);
+  const [error, setError] = useState(null);
 
   const performSearch = async (e) => {
     e?.preventDefault();
     setLoading(true);
+    setError(null);
     try {
       if (query.trim()) {
         const endpoint = searchMode === 'hybrid' ? '/search/hybrid' : '/search/semantic';
@@ -23,17 +25,25 @@ export default function JobSearchPage() {
           location: location || undefined,
           top_k: 15,
         });
-        setJobs(res.data.results.map((r) => ({ ...r.job, matchScore: intScore(r.similarity_score) })));
-        setTotal(res.data.total_results);
+        const items = res.data?.results || [];
+        setJobs(items.map((r) => ({ ...r.job, matchScore: intScore(r.similarity_score) })));
+        setTotal(res.data?.total_results ?? items.length);
       } else {
         const res = await API.get('/jobs', {
           params: { location: location || undefined, page_size: 15 },
         });
-        setJobs(res.data.jobs || []);
-        setTotal(res.data.total);
+        const jobList = res.data?.jobs;
+        if (Array.isArray(jobList)) {
+          setJobs(jobList);
+          setTotal(res.data?.total ?? jobList.length);
+        } else {
+          setJobs([]);
+          setTotal(0);
+        }
       }
     } catch (err) {
       console.error("Search failed:", err);
+      setError("Unable to connect to backend server. Render's free web service may be waking up from sleep. Please wait ~20 seconds and click Search again.");
     } finally {
       setLoading(false);
     }
@@ -53,6 +63,22 @@ export default function JobSearchPage() {
       />
 
       <main className="p-8 max-w-7xl w-full mx-auto space-y-6">
+        {/* Error Notice */}
+        {error && (
+          <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 text-amber-400" />
+              <span>{error}</span>
+            </div>
+            <button
+              onClick={performSearch}
+              className="px-3 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 font-bold shrink-0 text-amber-200 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
         {/* Search controls */}
         <form onSubmit={performSearch} className="p-4 rounded-3xl bg-slate-900 border border-slate-800 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-3">

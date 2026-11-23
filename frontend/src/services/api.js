@@ -1,7 +1,13 @@
 import axios from 'axios';
 
-// Base API URL: uses environment variable in production (Netlify), or '/api' proxy in local dev
-let rawBase = import.meta.env.VITE_API_BASE_URL || '/api';
+// Live production Render backend URL
+const LIVE_RENDER_API = 'https://ai-career-agent-api-l4rh.onrender.com/api';
+
+// Base API URL:
+// 1. If VITE_API_BASE_URL is set (from Netlify env vars or .env), use it.
+// 2. In production builds (on Netlify), default directly to the live Render cloud backend.
+// 3. In local development (!import.meta.env.PROD), use '/api' to leverage Vite's local dev proxy.
+let rawBase = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? LIVE_RENDER_API : '/api');
 rawBase = rawBase.trim().replace(/\/+$/, '');
 // Ensure it ends with /api if a full HTTP URL was provided without /api
 if (rawBase.startsWith('http') && !rawBase.endsWith('/api')) {
