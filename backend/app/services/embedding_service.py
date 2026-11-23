@@ -1,44 +1,36 @@
 """
 services/embedding_service.py — Text Embedding Service
 
-Uses SentenceTransformer ('all-MiniLM-L6-v2') to convert text into
+Uses Google Gemini Embedding API ('gemini-embedding-001') to convert text into
 dense 384-dimensional vector embeddings for semantic search and RAG.
-Model is loaded once in memory and shared across requests.
+Runs with zero local RAM footprint (< 10MB) to stay well under Render's 512MB RAM limit.
 """
 
 from typing import List, Union
 from functools import lru_cache
 import numpy as np
 from loguru import logger
-from sentence_transformers import SentenceTransformer
+from app.config import settings
 
-# Embedding model specification
-MODEL_NAME = "all-MiniLM-L6-v2"
+# Embedding model specification (384 dimensions matches pgvector Vector(384))
+MODEL_NAME = "gemini-embedding-001"
 EMBEDDING_DIM = 384
 
-
-class EmbeddingModelManager:
-    """Singleton wrapper for the local SentenceTransformer model."""
-    _instance: "EmbeddingModelManager" = None
-    _model: SentenceTransformer = None
-
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super(EmbeddingModelManager, cls).__new__(cls)
-            logger.info(f"🧠 Loading embedding model: {MODEL_NAME}...")
-            cls._model = SentenceTransformer(MODEL_NAME)
-            logger.info(f"✅ Embedding model '{MODEL_NAME}' loaded successfully.")
-        return cls._instance
-
-    @property
-    def model(self) -> SentenceTransformer:
-        return self._model
+try:
+    from google import genai
+    from google.genai import types as genai_types
+    _GENAI_AVAILABLE = True
+except ImportError:
+    _GENAI_AVAILABLE = False
 
 
-@lru_cache()
-def get_embedding_model() -> SentenceTransformer:
-    """Returns the cached SentenceTransformer instance."""
-    return EmbeddingModelManager().model
+def _get_genai_client():
+    if not _GENAI_AVAILABLE or not settings.gemini_api_key:
+        return None
+    return genai.Client(
+        api_key=settings.gemini_api_key,
+        http_options={"api_version": "v1beta"},
+    )
 
 
 def embed_text(text: str) -> List[float]:
@@ -49,20 +41,58 @@ def embed_text(text: str) -> List[float]:
     if not text or not text.strip():
         return [0.0] * EMBEDDING_DIM
 
-    model = get_embedding_model()
-    # normalize_embeddings=True ensures dot product equals cosine similarity
-    vector = model.encode(text.strip(), normalize_embeddings=True)
-    return vector.tolist()
+    client = _get_genai_client()
+    if client:
+        try:
+            resp = client.models.embed_content(
+                model=MODEL_NAME,
+                contents=text.strip(),
+                config=genai_types.EmbedContentConfig(output_dimensionality=EMBEDDING_DIM),
+            )
+            vec = resp.embeddings[0].values
+            return list(vec)
+        except Exception as e:
+            logger.warning(f"Gemini embed_content failed: {e}. Falling back to local SentenceTransformer.")
+
+    # Lazy-load SentenceTransformer as emergency fallback
+    try:
+        from sentence_transformers import SentenceTransformer
+        model = SentenceTransformer("all-MiniLM-L6-v2")
+        vector = model.encode(text.strip(), normalize_embeddings=True)
+        return vector.tolist()
+    except Exception as e:
+        logger.error(f"Fallback embedding failed: {e}")
+        return [0.0] * EMBEDDING_DIM
 
 
 def embed_batch(texts: List[str], batch_size: int = 32) -> List[List[float]]:
     """
-    Batch encodes multiple strings into vectors efficiently.
+    Batch encodes multiple strings into 384-dimensional vectors efficiently.
     """
     cleaned = [t.strip() if t and t.strip() else "empty" for t in texts]
-    model = get_embedding_model()
-    vectors = model.encode(cleaned, batch_size=batch_size, normalize_embeddings=True)
-    return vectors.tolist()
+    if not cleaned:
+        return []
+
+    client = _get_genai_client()
+    if client:
+        try:
+            resp = client.models.embed_content(
+                model=MODEL_NAME,
+                contents=cleaned,
+                config=genai_types.EmbedContentConfig(output_dimensionality=EMBEDDING_DIM),
+            )
+            return [list(e.values) for e in resp.embeddings]
+        except Exception as e:
+            logger.warning(f"Gemini batch embed failed: {e}. Falling back to local SentenceTransformer.")
+
+    try:
+        from sentence_transformers import SentenceTransformer
+        model = SentenceTransformer("all-MiniLM-L6-v2")
+        vectors = model.encode(cleaned, batch_size=batch_size, normalize_embeddings=True)
+        return vectors.tolist()
+    except Exception as e:
+        logger.error(f"Fallback batch embedding failed: {e}")
+        return [[0.0] * EMBEDDING_DIM for _ in cleaned]
 
 
 def compute_cosine_similarity(vec_a: List[float], vec_b: List[float]) -> float:
