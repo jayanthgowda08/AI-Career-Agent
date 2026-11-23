@@ -29,25 +29,17 @@ from app.services.recommendation_service import (
 # ============================================================
 # Tool 1: search_jobs
 # ============================================================
-def search_jobs(
-    query: str,
-    location: Optional[str] = None,
-    employment_type: Optional[str] = None,
-    experience_level: Optional[str] = None,
-    top_k: int = 5,
-) -> str:
+def search_jobs(query: str) -> str:
     """
     Search relevant job opportunities using hybrid semantic and keyword retrieval.
     Use this when the user asks to find jobs, search for roles, or explore openings.
+    query: Search query string containing desired role, skills, or location (e.g. 'python developer remote')
     """
     db = SessionLocal()
     try:
         req = SemanticSearchRequest(
             query=query,
-            location=location,
-            employment_type=employment_type,
-            experience_level=experience_level,
-            top_k=min(top_k, 10),
+            top_k=5,
         )
         results = search_jobs_hybrid(db, req)
         output = [
@@ -189,7 +181,7 @@ def analyse_skill_gap(job_id: str, candidate_id: str) -> str:
 # ============================================================
 # Tool 5: recommend_jobs
 # ============================================================
-def recommend_jobs(candidate_id: str, top_k: int = 5) -> str:
+def recommend_jobs(candidate_id: str) -> str:
     """
     Retrieve personalized job recommendations for the candidate based on
     their profile skills, experience, and preferences.
@@ -201,7 +193,7 @@ def recommend_jobs(candidate_id: str, top_k: int = 5) -> str:
         except ValueError:
             return json.dumps({"error": "Invalid candidate UUID"})
 
-        recs = get_personalized_recommendations(db, c_uuid, top_k=min(top_k, 10))
+        recs = get_personalized_recommendations(db, c_uuid, top_k=5)
         output = [
             {
                 "id": str(r.job.id),
@@ -293,12 +285,11 @@ def get_saved_jobs(user_id: str) -> str:
 # ============================================================
 def update_candidate_preferences(
     user_id: str,
-    preferred_roles: Optional[List[str]] = None,
-    preferred_locations: Optional[List[str]] = None,
-    employment_types: Optional[List[str]] = None,
+    preferred_roles: List[str],
+    preferred_locations: List[str],
 ) -> str:
     """
-    Update candidate job search preferences (roles, locations, or employment types).
+    Update candidate job search preferences (roles, locations).
     Call this when the user asks to change their target roles or search criteria.
     """
     db = SessionLocal()
@@ -315,15 +306,12 @@ def update_candidate_preferences(
             db.flush()
 
         updated = []
-        if preferred_roles is not None:
+        if preferred_roles:
             profile.preferred_roles = preferred_roles
             updated.append(f"roles: {', '.join(preferred_roles)}")
-        if preferred_locations is not None:
+        if preferred_locations:
             profile.preferred_locations = preferred_locations
             updated.append(f"locations: {', '.join(preferred_locations)}")
-        if employment_types is not None:
-            profile.employment_types = employment_types
-            updated.append(f"types: {', '.join(employment_types)}")
 
         db.commit()
         return json.dumps({
@@ -337,7 +325,7 @@ def update_candidate_preferences(
 # ============================================================
 # Tool 9: search_career_knowledge_base (RAG Tool)
 # ============================================================
-def search_career_knowledge_base(query: str, top_k: int = 3) -> str:
+def search_career_knowledge_base(query: str) -> str:
     """
     Search the curated career coaching and platform knowledge base.
     Use this when the user asks questions about:
@@ -351,7 +339,7 @@ def search_career_knowledge_base(query: str, top_k: int = 3) -> str:
     from app.services.rag_service import retrieve_relevant_chunks
     db = SessionLocal()
     try:
-        chunks = retrieve_relevant_chunks(db, query, top_k=top_k)
+        chunks = retrieve_relevant_chunks(db, query, top_k=3)
         results = [
             {
                 "title": c.source_title,
