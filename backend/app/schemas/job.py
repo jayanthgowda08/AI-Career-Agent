@@ -32,7 +32,7 @@ class JobCreate(JobBase):
 class JobResponse(JobBase):
     """Schema for returned job listing."""
     id: uuid.UUID
-    posted_date: date
+    posted_date: Optional[date] = None
     created_at: datetime
     updated_at: datetime
 

@@ -112,6 +112,7 @@ async def root():
     return {
         "message": f"Welcome to {settings.app_name} API",
         "version": "0.1.0",
+        "build": "deploy-fast-recs-v3",
         "docs": "/docs",
         "health": "/health",
     }

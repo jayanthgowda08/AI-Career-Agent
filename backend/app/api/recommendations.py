@@ -11,6 +11,7 @@ import uuid
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
+from loguru import logger
 
 from app.database import get_db
 from app.models.user import User
@@ -46,17 +47,24 @@ def get_recommendations(
     - Location preference and Remote compatibility
     - Experience compatibility
     """
-    results = get_personalized_recommendations(
-        db=db,
-        user_id=current_user.id,
-        top_k=top_k,
-        min_match_score=min_score,
-    )
-    return RecommendationListResponse(
-        candidate_id=current_user.id,
-        total_recommendations=len(results),
-        recommendations=results,
-    )
+    try:
+        results = get_personalized_recommendations(
+            db=db,
+            user_id=current_user.id,
+            top_k=top_k,
+            min_match_score=min_score,
+        )
+        return RecommendationListResponse(
+            candidate_id=current_user.id,
+            total_recommendations=len(results),
+            recommendations=results,
+        )
+    except Exception as err:
+        logger.error(f"Error generating recommendations for user {current_user.id}: {err}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate recommendations: {str(err)}",
+        )
 
 
 @router.get(
