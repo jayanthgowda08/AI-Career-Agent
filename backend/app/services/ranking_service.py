@@ -33,6 +33,26 @@ def normalize_token(token: str) -> str:
     return synonyms.get(cleaned, cleaned)
 
 
+def is_skill_match(skill_a: str, skill_b: str) -> bool:
+    """
+    High-precision skill comparison:
+    - Normalizes common abbreviations and synonyms.
+    - Prevents false-positive substring matches (e.g. 'C' in 'CSS', 'Java' in 'JavaScript', 'R' in 'React').
+    - Requires exact token equality for short identifiers (<= 3 chars).
+    """
+    a = normalize_token(skill_a)
+    b = normalize_token(skill_b)
+    if a == b:
+        return True
+    if len(a) <= 3 or len(b) <= 3:
+        return a == b
+    pattern_a = r"(?:\b|_)" + re.escape(a) + r"(?:\b|_)"
+    if re.search(pattern_a, b):
+        return True
+    pattern_b = r"(?:\b|_)" + re.escape(b) + r"(?:\b|_)"
+    return bool(re.search(pattern_b, a))
+
+
 def analyze_skill_overlap(
     candidate_skills: List[str],
     job_required_skills: List[str],
@@ -40,54 +60,49 @@ def analyze_skill_overlap(
 ) -> Tuple[List[str], List[str], List[str], float]:
     """
     Compares candidate skills with job required and preferred skills.
-    Returns:
-    (matching_skills, missing_required_skills, missing_preferred_skills, skill_match_score)
+    Accurately handles:
+    - Full match: all required skills matched (score ~1.0)
+    - Partial match: fraction of skills matched (score proportional to overlap)
+    - No match: 0 skills matched (score = 0.0)
     """
+    if not candidate_skills:
+        return [], list(job_required_skills or []), list(job_preferred_skills or []), 0.0
+
     if not job_required_skills and not job_preferred_skills:
-        return candidate_skills[:5], [], [], 0.7  # Neutral score if job specifies no skills
+        return [], [], [], 0.0
 
     job_pref = job_preferred_skills or []
-    cand_norm = {normalize_token(s): s for s in candidate_skills}
-
     matching = []
     missing_req = []
     missing_pref = []
 
     # Check required skills (highest weight)
     for req in job_required_skills:
-        norm = normalize_token(req)
-        # Check exact or substring match
-        matched_cand = None
-        for c_norm, orig in cand_norm.items():
-            if norm == c_norm or norm in c_norm or c_norm in norm:
-                matched_cand = orig
+        matched = False
+        for cand in candidate_skills:
+            if is_skill_match(req, cand):
+                matching.append(req)
+                matched = True
                 break
-        if matched_cand:
-            matching.append(req)
-        else:
+        if not matched:
             missing_req.append(req)
 
     # Check preferred skills
     for pref in job_pref:
-        norm = normalize_token(pref)
-        matched_cand = None
-        for c_norm, orig in cand_norm.items():
-            if norm == c_norm or norm in c_norm or c_norm in norm:
-                matched_cand = orig
+        matched = False
+        for cand in candidate_skills:
+            if is_skill_match(pref, cand):
+                if pref not in matching:
+                    matching.append(pref)
+                matched = True
                 break
-        if matched_cand:
-            if req not in matching:
-                matching.append(pref)
-        else:
+        if not matched:
             missing_pref.append(pref)
 
-    # Score calculation: 75% weight on required, 25% on preferred
-    req_ratio = len(matching) / len(job_required_skills) if job_required_skills else 1.0
-    pref_ratio = (
-        len([p for p in job_pref if p in matching]) / len(job_pref)
-        if job_pref else 0.5
-    )
-    skill_score = min(1.0, (0.75 * req_ratio) + (0.25 * pref_ratio))
+    # Accurate proportional scoring: 75% required, 25% preferred
+    req_ratio = len([m for m in matching if m in job_required_skills]) / len(job_required_skills) if job_required_skills else 1.0
+    pref_ratio = len([m for m in matching if m in job_pref]) / len(job_pref) if job_pref else 0.0
+    skill_score = (0.75 * req_ratio) + (0.25 * pref_ratio)
 
     return matching, missing_req, missing_pref, round(skill_score, 4)
 
@@ -195,6 +210,12 @@ def calculate_match_score(
         + (w["location"] * location_score)
         + (w["experience"] * exp_score)
     )
+
+    # Strict accuracy penalty: if candidate has ZERO matching skills and no role match,
+    # prevent false positive inflation from location/experience
+    if len(matching) == 0 and role_score < 0.3:
+        composite *= 0.3  # Drastically reduces score to <= 8%
+
     match_percentage = int(round(max(0.0, min(1.0, composite)) * 100))
 
     # 3. Generate human-readable reasons

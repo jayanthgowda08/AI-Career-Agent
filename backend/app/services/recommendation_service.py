@@ -102,7 +102,7 @@ def get_personalized_recommendations(
     except Exception as vec_err:
         logger.warning(f"Vector retrieval note: {vec_err}")
 
-    # Fallback if no embeddings exist yet: rank directly against database jobs
+    # Fallback if no vector embeddings exist: rank directly against database jobs using multi-factor logic
     if not candidates:
         all_jobs = db.query(Job).limit(top_k * 2).all()
         direct_recs: List[JobRecommendationResponse] = []
@@ -110,18 +110,20 @@ def get_personalized_recommendations(
             match_score, breakdown, matching, missing, reasons = calculate_match_score(
                 job=job,
                 profile=profile,
-                semantic_similarity=0.5,
+                semantic_similarity=0.3,
             )
-            direct_recs.append(
-                JobRecommendationResponse(
-                    job=JobResponse.model_validate(job),
-                    match_score=max(match_score, 45),
-                    matching_skills=matching,
-                    missing_skills=missing,
-                    match_reasons=reasons,
-                    score_breakdown=breakdown,
+            # Strictly enforce min_match_score — no artificial score inflation
+            if match_score >= min_match_score:
+                direct_recs.append(
+                    JobRecommendationResponse(
+                        job=JobResponse.model_validate(job),
+                        match_score=match_score,
+                        matching_skills=matching,
+                        missing_skills=missing,
+                        match_reasons=reasons,
+                        score_breakdown=breakdown,
+                    )
                 )
-            )
         direct_recs.sort(key=lambda r: r.match_score, reverse=True)
         return direct_recs[:top_k]
 
@@ -136,6 +138,7 @@ def get_personalized_recommendations(
             semantic_similarity=semantic_sim,
         )
 
+        # Strictly enforce min_match_score
         if match_score >= min_match_score:
             recommendations.append(
                 JobRecommendationResponse(
@@ -148,27 +151,7 @@ def get_personalized_recommendations(
                 )
             )
 
-    # 6. Safety net: if no job met the min_match_score filter, return top jobs scored anyway
-    if not recommendations:
-        all_jobs = db.query(Job).limit(top_k).all()
-        for job in all_jobs:
-            match_score, breakdown, matching, missing, reasons = calculate_match_score(
-                job=job,
-                profile=profile,
-                semantic_similarity=0.5,
-            )
-            recommendations.append(
-                JobRecommendationResponse(
-                    job=JobResponse.model_validate(job),
-                    match_score=max(match_score, 45),
-                    matching_skills=matching,
-                    missing_skills=missing,
-                    match_reasons=reasons or ["Opportunity matching your technical foundation"],
-                    score_breakdown=breakdown,
-                )
-            )
-
-    # 7. Sort descending by match score
+    # 6. Sort descending by true match score
     recommendations.sort(key=lambda r: r.match_score, reverse=True)
     return recommendations[:top_k]
 
