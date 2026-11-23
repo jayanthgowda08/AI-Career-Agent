@@ -99,13 +99,14 @@ def _call_gemini_with_tools(model_name: str, full_prompt: str) -> Optional[Any]:
     """
     client = _make_genai_client()
 
-    # Build a GenerativeModel with tools
+    # Build a GenerativeModel with tools and zero thinking budget to avoid thought signature requirement
     model = client.chats.create(
         model=model_name,
         config=genai_types.GenerateContentConfig(
             system_instruction=AGENT_SYSTEM_PROMPT,
             tools=CAREER_AGENT_TOOLS,
             temperature=0.3,
+            thinking_config=genai_types.ThinkingConfig(thinking_budget=0),
         ),
     )
     response = model.send_message(full_prompt)
@@ -115,7 +116,7 @@ def _call_gemini_with_tools(model_name: str, full_prompt: str) -> Optional[Any]:
 def agent_node(state: CareerAgentState) -> Dict[str, Any]:
     """
     Agent Node: Calls Gemini with available tools and gets next action or final response.
-    Implements multi-model fallback chain (primary → gemini-2.0-flash → gemini-1.5-flash).
+    Implements multi-model fallback chain (primary → gemini-3.5-flash-lite → ...).
     """
     if not _GENAI_AVAILABLE:
         return {
@@ -132,6 +133,7 @@ def agent_node(state: CareerAgentState) -> Dict[str, Any]:
 
     response = None
     last_error = None
+    chat_session = None
 
     for model_name in _AGENT_MODEL_FALLBACK:
         try:
@@ -143,17 +145,19 @@ def agent_node(state: CareerAgentState) -> Dict[str, Any]:
                     system_instruction=AGENT_SYSTEM_PROMPT,
                     tools=CAREER_AGENT_TOOLS,
                     temperature=0.3,
+                    thinking_config=genai_types.ThinkingConfig(thinking_budget=0),
                 ),
             )
             response = chat.send_message(full_prompt)
+            chat_session = chat
             logger.info(f"✅ Agent got response from model: {model_name}")
             break
         except Exception as e:
             err_str = str(e)
             logger.warning(f"Model {model_name} failed in agent_node: {err_str[:200]}")
             last_error = e
-            # Only continue fallback for retriable errors
-            if any(code in err_str for code in ["429", "503", "404", "UNAVAILABLE", "quota"]):
+            # Continue fallback for retriable or model-specific errors
+            if any(code in err_str for code in ["429", "503", "404", "UNAVAILABLE", "quota", "thought_signature", "INVALID_ARGUMENT"]):
                 continue
             else:
                 break  # Non-retriable error (e.g. bad API key) — stop immediately
@@ -165,7 +169,23 @@ def agent_node(state: CareerAgentState) -> Dict[str, Any]:
             "iterations": iteration,
         }
 
-    # Inspect response — check for function call
+    # Extract any tools executed during the chat (e.g. via Automatic Function Calling)
+    auto_tools_called = []
+    if chat_session:
+        try:
+            for turn in chat_session.get_history():
+                for part in (getattr(turn, "parts", None) or []):
+                    fn_call = getattr(part, "function_call", None)
+                    if fn_call and fn_call.name:
+                        auto_tools_called.append({
+                            "tool_name": fn_call.name,
+                            "arguments": dict(fn_call.args or {}),
+                            "result_summary": "Executed via Gemini agent session",
+                        })
+        except Exception as hist_err:
+            logger.debug(f"Could not extract tool history: {hist_err}")
+
+    # Inspect response — check for pending function call
     try:
         candidate = response.candidates[0]
         # In new SDK, parts may be FunctionCall objects
@@ -188,22 +208,29 @@ def agent_node(state: CareerAgentState) -> Dict[str, Any]:
                     "status": "tool_call",
                     "pending_tool": {"name": tool_name, "args": tool_args},
                     "iterations": iteration,
+                    "tools_called": list(state.get("tools_called", []) or []) + auto_tools_called,
                 }
 
-        # No function call — extract text answer
+        # No pending function call — extract text answer
         text_answer = response.text or "I have processed your request."
         logger.info("✅ Agent generated final textual answer.")
         return {
             "final_response": text_answer,
             "status": "finished",
             "iterations": iteration,
+            "tools_called": list(state.get("tools_called", []) or []) + auto_tools_called,
         }
     except Exception as e:
         logger.error(f"❌ Failed to parse Gemini response: {e}")
         # Try to get text as fallback
         try:
             text = response.text or "I processed your request but encountered a formatting issue."
-            return {"final_response": text, "status": "finished", "iterations": iteration}
+            return {
+                "final_response": text,
+                "status": "finished",
+                "iterations": iteration,
+                "tools_called": list(state.get("tools_called", []) or []) + auto_tools_called,
+            }
         except Exception:
             return {
                 "final_response": "An unexpected error occurred while processing the AI response.",
@@ -258,7 +285,10 @@ def tools_node(state: CareerAgentState) -> Dict[str, Any]:
             resp = client.models.generate_content(
                 model=model_name,
                 contents=synthesis_prompt,
-                config=genai_types.GenerateContentConfig(temperature=0.3),
+                config=genai_types.GenerateContentConfig(
+                    temperature=0.3,
+                    thinking_config=genai_types.ThinkingConfig(thinking_budget=0),
+                ),
             )
             final_answer = resp.text
             logger.info(f"✅ Synthesis complete via {model_name}")
