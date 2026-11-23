@@ -81,16 +81,49 @@ def get_personalized_recommendations(
             for j in jobs
         ]
 
-    # 2. Ensure all jobs have embeddings
-    ensure_all_jobs_embedded(db)
+    # 2. Check if job embeddings exist in pgvector
+    has_embeddings = db.query(JobEmbedding).first() is not None
+    if not has_embeddings:
+        # Trigger embedding generation in background so the user request never hangs
+        import threading
+        def _bg_embed():
+            from app.database import SessionLocal
+            try:
+                with SessionLocal() as bg_db:
+                    ensure_all_jobs_embedded(bg_db)
+            except Exception as e:
+                logger.warning(f"Background embedding note: {e}")
+        threading.Thread(target=_bg_embed, daemon=True).start()
 
-    # 3. Create candidate vector embedding
-    cand_text = build_candidate_profile_text(profile)
-    cand_vector = embed_text(cand_text)
+        # Immediate fast response: multi-factor ranking directly from SQL (50ms)
+        all_jobs = db.query(Job).limit(top_k * 2).all()
+        direct_recs: List[JobRecommendationResponse] = []
+        for job in all_jobs:
+            match_score, breakdown, matching, missing, reasons = calculate_match_score(
+                job=job,
+                profile=profile,
+                semantic_similarity=0.5,
+            )
+            direct_recs.append(
+                JobRecommendationResponse(
+                    job=JobResponse.model_validate(job),
+                    match_score=max(match_score, 45),
+                    matching_skills=matching,
+                    missing_skills=missing,
+                    match_reasons=reasons,
+                    score_breakdown=breakdown,
+                )
+            )
+        direct_recs.sort(key=lambda r: r.match_score, reverse=True)
+        return direct_recs[:top_k]
 
-    # 4. Stage 1: Fast pgvector retrieval of candidate pool (top 30 jobs)
+    # 3. Create candidate vector embedding with fallback
     candidates = []
     try:
+        cand_text = build_candidate_profile_text(profile)
+        cand_vector = embed_text(cand_text)
+
+        # 4. Stage 1: Fast pgvector retrieval of candidate pool (top 30 jobs)
         distance_col = JobEmbedding.embedding.cosine_distance(cand_vector).label("distance")
         stmt = (
             select(Job, distance_col)
@@ -100,7 +133,7 @@ def get_personalized_recommendations(
         )
         candidates = db.execute(stmt).all()
     except Exception as vec_err:
-        logger.warning(f"Vector retrieval note: {vec_err}")
+        logger.warning(f"Vector search note (falling back to direct ranking): {vec_err}")
 
     # Fallback if no embeddings exist yet: rank directly against database jobs
     if not candidates:
