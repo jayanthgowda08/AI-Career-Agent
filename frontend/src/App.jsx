@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import API from './services/api';
 
 // Pages
 import LandingPage from './pages/LandingPage';
@@ -18,6 +19,11 @@ import EvaluationDashboard from './pages/EvaluationDashboard';
 import SettingsPage from './pages/SettingsPage';
 
 export default function App() {
+  // Proactively ping health endpoint on load to pre-warm Render server before user submits login
+  useEffect(() => {
+    API.get('/health').catch(() => {});
+  }, []);
+
   return (
     <AuthProvider>
       <BrowserRouter>

@@ -18,8 +18,16 @@ from app.schemas.recommendation import ScoreBreakdown
 
 def normalize_token(token: str) -> str:
     """Normalizes a skill/role string for case-insensitive robust comparison."""
-    cleaned = re.sub(r"[^a-zA-Z0-9\s]", "", token).lower().strip()
-    # Normalize common abbreviations
+    t = token.lower().strip()
+    # Explicitly preserve semantic programming language symbols before regex stripping
+    t = t.replace("c++", "cpp")
+    t = t.replace("c#", "csharp")
+    t = t.replace(".net", "dotnet")
+    t = t.replace("golang", "go")
+    
+    cleaned = re.sub(r"[^a-zA-Z0-9\s]", "", t).strip()
+
+    # Normalize common abbreviations and equivalents
     synonyms = {
         "reactjs": "react",
         "react js": "react",
@@ -29,6 +37,11 @@ def normalize_token(token: str) -> str:
         "fast api": "fastapi",
         "py torch": "pytorch",
         "tf": "tensorflow",
+        "scikit learn": "scikitlearn",
+        "sklearn": "scikitlearn",
+        "js": "javascript",
+        "ts": "typescript",
+        "k8s": "kubernetes",
     }
     return synonyms.get(cleaned, cleaned)
 
@@ -211,10 +224,11 @@ def calculate_match_score(
         + (w["experience"] * exp_score)
     )
 
-    # Strict accuracy penalty: if candidate has ZERO matching skills and no role match,
-    # prevent false positive inflation from location/experience
-    if len(matching) == 0 and role_score < 0.3:
-        composite *= 0.3  # Drastically reduces score to <= 8%
+    # Strict accuracy penalty: if candidate has ZERO matching skills,
+    # prevent false positive inflation from location/experience/role.
+    # In technical hiring, 0 matching skills means the candidate cannot be recommended.
+    if len(matching) == 0:
+        composite = min(composite * 0.2, 0.10)  # Strictly capped at <= 10%
 
     match_percentage = int(round(max(0.0, min(1.0, composite)) * 100))
 

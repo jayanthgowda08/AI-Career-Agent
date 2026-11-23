@@ -129,7 +129,10 @@ export default function AuthPage() {
             className="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-sm shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 mt-2"
           >
             {loading ? (
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>Signing in...</span>
+              </div>
             ) : (
               <>
                 <span>{isRegister ? 'Register & Continue' : 'Sign In to Dashboard'}</span>
@@ -137,6 +140,11 @@ export default function AuthPage() {
               </>
             )}
           </button>
+          {loading && (
+            <p className="text-[11px] text-amber-400/90 text-center animate-pulse pt-1">
+              ⚡ Connecting to backend (free cloud instance takes ~30s on cold start)
+            </p>
+          )}
         </form>
 
         <p className="mt-6 text-center text-xs text-slate-500">

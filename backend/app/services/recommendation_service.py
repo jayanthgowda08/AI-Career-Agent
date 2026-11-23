@@ -57,29 +57,11 @@ def get_personalized_recommendations(
     """
     Returns personalized, ranked job recommendations for a candidate.
     """
-    # 1. Fetch Candidate Profile
+    # 1. Fetch Candidate Profile — return empty list if profile or skills are missing
     profile = db.query(CandidateProfile).filter(CandidateProfile.user_id == user_id).first()
-    if not profile:
-        logger.warning(f"No profile found for user {user_id}, returning general jobs.")
-        # Fallback to recent jobs if profile doesn't exist
-        jobs = db.query(Job).limit(top_k).all()
-        return [
-            JobRecommendationResponse(
-                job=JobResponse.model_validate(j),
-                match_score=50,
-                matching_skills=[],
-                missing_skills=j.required_skills,
-                match_reasons=["General listing (complete your profile for personalized scores)"],
-                score_breakdown={
-                    "skill_score": 0.5,
-                    "semantic_score": 0.5,
-                    "role_score": 0.5,
-                    "location_score": 0.5,
-                    "experience_score": 0.5,
-                },
-            )
-            for j in jobs
-        ]
+    if not profile or not profile.skills:
+        logger.info(f"User {user_id} has no profile or no skills listed. Returning 0 recommendations.")
+        return []
 
     # 2. Ensure all jobs have embeddings
     ensure_all_jobs_embedded(db)
