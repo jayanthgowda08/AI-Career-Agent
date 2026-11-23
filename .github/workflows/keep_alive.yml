@@ -1,0 +1,15 @@
+name: Render Backend Keep-Alive
+
+on:
+  schedule:
+    # Run every 10 minutes to prevent Render free tier 15-minute sleep
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render Backend Health Endpoint
+        run: |
+          curl -sS --max-time 45 https://ai-career-agent-api-l4rh.onrender.com/health || true
