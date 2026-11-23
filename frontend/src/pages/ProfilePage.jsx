@@ -81,6 +81,25 @@ export default function ProfilePage() {
       />
 
       <main className="p-8 max-w-4xl w-full mx-auto space-y-6">
+        {/* Quick AI Resume Upload Banner */}
+        <div className="p-5 rounded-2xl bg-indigo-500/10 border border-indigo-500/25 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-indigo-500/20 text-indigo-400">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-white">Auto-fill with AI Resume Parser</h3>
+              <p className="text-xs text-slate-400">Upload your PDF resume to instantly extract your skills, experience, and education.</p>
+            </div>
+          </div>
+          <a
+            href="/dashboard/resume"
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold whitespace-nowrap transition-colors"
+          >
+            Upload Resume
+          </a>
+        </div>
+
         {success && (
           <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-semibold flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4" />
