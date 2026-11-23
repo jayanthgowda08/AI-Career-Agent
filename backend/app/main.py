@@ -98,12 +98,10 @@ app = FastAPI(
 # ============================================================
 # CORS Middleware
 # ============================================================
-# CORS (Cross-Origin Resource Sharing) allows the React frontend
-# running on localhost:5173 to make API calls to localhost:8000.
-# Without this, browsers block cross-origin requests.
+# Allow all web origins (Netlify, local dev, custom domains) dynamically
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.allowed_origins_list,
+    allow_origin_regex=r"^https?:\/\/.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
