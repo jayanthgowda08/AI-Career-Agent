@@ -38,14 +38,14 @@ async def lifespan(app: FastAPI):
     os.makedirs(settings.upload_dir, exist_ok=True)
     logger.info(f"📁 Upload directory ready: {settings.upload_dir}")
 
-    # Initialize database extensions & tables safely inside lifespan
-    try:
-        init_db()
-    except Exception as db_err:
-        logger.error(f"⚠️ Database initialization error: {db_err}")
+    # Offload database table initialization & seeding to background thread
+    # so Uvicorn binds port 10000 immediately without hitting Render's port scan timeout
+    def _background_init_and_seed():
+        try:
+            init_db()
+        except Exception as db_err:
+            logger.error(f"⚠️ Database initialization error: {db_err}")
 
-    # Auto-seed sample jobs in background if empty (fast, lightweight SQL only)
-    def _background_seed():
         try:
             from app.database import SessionLocal
             from app.models.job import Job
@@ -61,7 +61,7 @@ async def lifespan(app: FastAPI):
             logger.warning(f"Background auto-seed note: {seed_err}")
 
     import threading
-    threading.Thread(target=_background_seed, daemon=True).start()
+    threading.Thread(target=_background_init_and_seed, daemon=True).start()
 
     logger.info("✅ Application startup complete.")
     logger.info(f"📖 API docs available at: http://localhost:8000/docs")
