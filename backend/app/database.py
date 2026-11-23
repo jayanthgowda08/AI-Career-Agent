@@ -28,6 +28,7 @@ engine = create_engine(
     pool_pre_ping=True,
     pool_size=10,          # number of persistent connections in the pool
     max_overflow=20,       # extra connections allowed beyond pool_size
+    connect_args={"connect_timeout": 15},  # prevents indefinite hangs on cold boot
     echo=settings.is_development,  # log all SQL in dev mode (disable in prod)
 )
 
