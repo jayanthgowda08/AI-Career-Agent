@@ -89,14 +89,41 @@ def get_personalized_recommendations(
     cand_vector = embed_text(cand_text)
 
     # 4. Stage 1: Fast pgvector retrieval of candidate pool (top 30 jobs)
-    distance_col = JobEmbedding.embedding.cosine_distance(cand_vector).label("distance")
-    stmt = (
-        select(Job, distance_col)
-        .join(JobEmbedding, Job.id == JobEmbedding.job_id)
-        .order_by("distance")
-        .limit(30)
-    )
-    candidates = db.execute(stmt).all()
+    candidates = []
+    try:
+        distance_col = JobEmbedding.embedding.cosine_distance(cand_vector).label("distance")
+        stmt = (
+            select(Job, distance_col)
+            .join(JobEmbedding, Job.id == JobEmbedding.job_id)
+            .order_by("distance")
+            .limit(30)
+        )
+        candidates = db.execute(stmt).all()
+    except Exception as vec_err:
+        logger.warning(f"Vector retrieval note: {vec_err}")
+
+    # Fallback if no embeddings exist yet: rank directly against database jobs
+    if not candidates:
+        all_jobs = db.query(Job).limit(top_k * 2).all()
+        direct_recs: List[JobRecommendationResponse] = []
+        for job in all_jobs:
+            match_score, breakdown, matching, missing, reasons = calculate_match_score(
+                job=job,
+                profile=profile,
+                semantic_similarity=0.5,
+            )
+            direct_recs.append(
+                JobRecommendationResponse(
+                    job=JobResponse.model_validate(job),
+                    match_score=max(match_score, 45),
+                    matching_skills=matching,
+                    missing_skills=missing,
+                    match_reasons=reasons,
+                    score_breakdown=breakdown,
+                )
+            )
+        direct_recs.sort(key=lambda r: r.match_score, reverse=True)
+        return direct_recs[:top_k]
 
     # 5. Stage 2: Fine-grained multi-factor ranking
     recommendations: List[JobRecommendationResponse] = []

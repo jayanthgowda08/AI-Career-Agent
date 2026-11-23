@@ -44,26 +44,19 @@ async def lifespan(app: FastAPI):
     except Exception as db_err:
         logger.error(f"⚠️ Database initialization error: {db_err}")
 
-    # Auto-seed sample jobs, embeddings, and RAG knowledge in background if empty
+    # Auto-seed sample jobs in background if empty (fast, lightweight SQL only)
     def _background_seed():
         try:
             from app.database import SessionLocal
             from app.models.job import Job
             from app.services.job_service import seed_jobs_from_file
-            from app.services.semantic_search import ensure_all_jobs_embedded
-            from app.services.rag_service import seed_rag_knowledge_base
 
             with SessionLocal() as db:
                 count = db.query(Job).count()
                 if count == 0:
-                    logger.info("🌱 Database has 0 jobs. Auto-seeding sample jobs and embeddings...")
+                    logger.info("🌱 Database has 0 jobs. Auto-seeding 15 sample jobs...")
                     created, _ = seed_jobs_from_file(db)
-                    embedded = ensure_all_jobs_embedded(db)
-                    rag_chunks = seed_rag_knowledge_base(db)
-                    logger.info(f"✅ Auto-seed complete: {created} jobs, {embedded} embeddings, {rag_chunks} RAG chunks.")
-                else:
-                    logger.info(f"💼 Database has {count} jobs. Ensuring embeddings are up to date...")
-                    ensure_all_jobs_embedded(db)
+                    logger.info(f"✅ Auto-seed complete: {created} jobs created.")
         except Exception as seed_err:
             logger.warning(f"Background auto-seed note: {seed_err}")
 
