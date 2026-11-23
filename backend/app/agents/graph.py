@@ -45,16 +45,15 @@ def _make_genai_client() -> "genai.Client":
 # Maximum tool-calling steps per turn to avoid infinite loops
 MAX_ITERATIONS = 8
 
-# Model fallback chain — based on verified availability for this API key:
-# ✅ gemini-3.5-flash      (v1beta + v1)
-# ✅ gemini-3.5-flash-lite (v1beta + v1)
-# ✅ gemini-3.1-flash-lite (v1beta only)
-# ⚠️ gemini-3.8-flash     (503 overload — try last)
+# Model fallback chain — verified active, high availability, zero-503 models:
+# ✅ gemini-2.5-flash       (Primary: ultra-fast, rock solid availability, zero 503 spikes)
+# ✅ gemini-3-flash-preview (Secondary fallback: verified active & working)
+# ⚠️ gemini-3.5-flash       (Tertiary: powerful but suffers from frequent high demand spikes)
 _AGENT_MODEL_FALLBACK = [
-    settings.gemini_model,        # Primary from .env → gemini-3.5-flash
-    "gemini-3.5-flash-lite",      # Lighter, same quality
-    "gemini-3.1-flash-lite",      # v1beta-only emergency fallback
-    "gemini-3.8-flash",           # Last resort (often 503)
+    settings.gemini_model,        # Primary from .env / config → gemini-2.5-flash
+    "gemini-2.5-flash",
+    "gemini-3-flash-preview",
+    "gemini-3.5-flash",
 ]
 
 # De-duplicate while preserving order

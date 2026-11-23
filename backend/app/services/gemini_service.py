@@ -144,9 +144,9 @@ def extract_structured_resume_with_gemini(resume_text: str) -> ParsedResumeData:
 
     user_message = f"Please extract structured data from this resume text:\n\n{resume_text}"
 
-    # Verified working models for this API key (from find_models.py scan):
-    # gemini-3.5-flash ✅, gemini-3.5-flash-lite ✅, gemini-3.1-flash-lite ✅ (v1beta)
-    models_to_try = [settings.gemini_model, "gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.8-flash"]
+    # Verified working models for this API key:
+    # gemini-2.5-flash ✅ (stable, zero 503s), gemini-3-flash-preview ✅, gemini-3.5-flash
+    models_to_try = [settings.gemini_model, "gemini-2.5-flash", "gemini-3-flash-preview", "gemini-3.5-flash"]
     # Deduplicate while preserving order
     seen = set()
     models_to_try = [m for m in models_to_try if not (m in seen or seen.add(m))]
