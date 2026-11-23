@@ -92,21 +92,47 @@ AGENT_SYSTEM_PROMPT = (
 )
 
 
+def _build_thinking_config() -> Optional[Any]:
+    """
+    Safely creates a ThinkingConfig disabling reasoning tokens (thinking_budget=0 or minimal)
+    to prevent 'Function call is missing a thought_signature in functionCall parts'.
+    Inspects model fields dynamically so it never throws a Pydantic extra_forbidden ValidationError.
+    """
+    if not _GENAI_AVAILABLE or not hasattr(genai_types, "ThinkingConfig"):
+        return None
+    try:
+        fields = getattr(genai_types.ThinkingConfig, "model_fields", {})
+        kwargs = {}
+        if "thinking_budget" in fields:
+            kwargs["thinking_budget"] = 0
+        elif "thinking_level" in fields:
+            kwargs["thinking_level"] = "minimal"
+        if "include_thoughts" in fields:
+            kwargs["include_thoughts"] = False
+        if kwargs:
+            return genai_types.ThinkingConfig(**kwargs)
+    except Exception as e:
+        logger.warning(f"Could not initialize ThinkingConfig: {e}")
+    return None
+
+
 def _call_gemini_with_tools(model_name: str, full_prompt: str) -> Optional[Any]:
     """
     Try calling Gemini with tool definitions using the new genai SDK.
     Returns the response object or raises an exception.
     """
     client = _make_genai_client()
+    tc = _build_thinking_config()
+    cfg_kwargs = {"thinking_config": tc} if tc else {}
 
-    # Build a GenerativeModel with tools and zero thinking budget to avoid thought signature requirement
+    # Build a GenerativeModel with tools
     model = client.chats.create(
         model=model_name,
         config=genai_types.GenerateContentConfig(
             system_instruction=AGENT_SYSTEM_PROMPT,
             tools=CAREER_AGENT_TOOLS,
             temperature=0.3,
-            thinking_config=genai_types.ThinkingConfig(thinking_budget=0),
+            **cfg_kwargs,
         ),
     )
     response = model.send_message(full_prompt)
@@ -134,6 +160,8 @@ def agent_node(state: CareerAgentState) -> Dict[str, Any]:
     response = None
     last_error = None
     chat_session = None
+    tc = _build_thinking_config()
+    cfg_kwargs = {"thinking_config": tc} if tc else {}
 
     for model_name in _AGENT_MODEL_FALLBACK:
         try:
@@ -145,7 +173,7 @@ def agent_node(state: CareerAgentState) -> Dict[str, Any]:
                     system_instruction=AGENT_SYSTEM_PROMPT,
                     tools=CAREER_AGENT_TOOLS,
                     temperature=0.3,
-                    thinking_config=genai_types.ThinkingConfig(thinking_budget=0),
+                    **cfg_kwargs,
                 ),
             )
             response = chat.send_message(full_prompt)
@@ -282,12 +310,14 @@ def tools_node(state: CareerAgentState) -> Dict[str, Any]:
     for model_name in _AGENT_MODEL_FALLBACK:
         try:
             client = _make_genai_client()
+            tc = _build_thinking_config()
+            cfg_kwargs = {"thinking_config": tc} if tc else {}
             resp = client.models.generate_content(
                 model=model_name,
                 contents=synthesis_prompt,
                 config=genai_types.GenerateContentConfig(
                     temperature=0.3,
-                    thinking_config=genai_types.ThinkingConfig(thinking_budget=0),
+                    **cfg_kwargs,
                 ),
             )
             final_answer = resp.text
